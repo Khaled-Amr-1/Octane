@@ -9,4 +9,5 @@ app.use(express.json());
 app.use("/api", userRoutes);
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+
 export default app;

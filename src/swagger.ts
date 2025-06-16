@@ -10,9 +10,9 @@ const options = {
     },
     servers: [{ url: "https://octane-nine.vercel.app" }],
   },
-  apis: ["./src/modules/**/*.ts"], // <--- CHANGE HERE
+  apis: ["./src/modules/**/*.ts", "./src/app.ts"],
 };
 
 const swaggerSpec = swaggerJSDoc(options);
-console.log(JSON.stringify(swaggerSpec, null, 2));
+console.log(JSON.stringify(swaggerSpec, null, 2)); // Leave this for debugging
 export default swaggerSpec;
