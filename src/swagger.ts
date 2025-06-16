@@ -1,22 +1,17 @@
-import swaggerJSDoc from 'swagger-jsdoc';
+import swaggerJSDoc from "swagger-jsdoc";
 
 const options = {
   definition: {
-    openapi: '3.0.0',
+    openapi: "3.0.0",
     info: {
-      title: 'Octane API',
-      version: '1.0.0',
-      description: 'API documentation for Octane backend',
+      title: "Octane API",
+      version: "1.0.0",
+      description: "API documentation for Octane backend",
     },
-    servers: [
-      {
-        url: 'http://localhost:3000',
-      },
-    ],
+    servers: [{ url: "https://octane-nine.vercel.app" }],
   },
-  apis: ['./src/modules/**/*.js'],
+  apis: ["./dist/src/modules/**/*.js"],
 };
 
 const swaggerSpec = swaggerJSDoc(options);
-
 export default swaggerSpec;
