@@ -1,11 +1,10 @@
-
 import express from "express";
 import "dotenv/config";
-import userRoutes from "./modules/user/user.routes.js";
+import apiRoutes from "./routes/index.js";
 
 const app = express();
 app.use(express.json());
-app.use("/api", userRoutes);
 
+app.use("/api", apiRoutes);
 
 export default app;
