@@ -20,7 +20,7 @@ export const signup = async (req: Request, res: Response) => {
   }
   const octaneEmailRegex = /^[a-zA-Z0-9._%+-]+@octane-tech\.io$/;
   if (!octaneEmailRegex.test(email)) {
-    res.status(400).json({ message: "Email must be in the form name@octane-tech.io" });
+    res.status(400).json({ message: "Email must be in the form @octane-tech.io" });
     return;
   }
     
@@ -77,6 +77,3 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-export const logout = (req: Request, res: Response) => {
-  res.json({ message: "Logged out. Remove token on client side." });
-};
