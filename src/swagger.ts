@@ -1,4 +1,5 @@
 import swaggerJSDoc from "swagger-jsdoc";
+import path from "path";
 
 const options = {
   definition: {
@@ -10,7 +11,7 @@ const options = {
     },
     servers: [{ url: "https://octane-nine.vercel.app" }],
   },
-  apis: ["./src/modules/user/user.routes.ts"],
+  apis: [path.resolve(__dirname, "./modules/user/user.routes.ts")],
 };
 
 const swaggerSpec = swaggerJSDoc(options);
