@@ -10,7 +10,7 @@ export const signup = async (req: Request, res: Response) => {
     res.status(400).json({ message: "All fields are required" });
     return;
   }
-    if (name.length <= 3) {
+  if (name.length <= 3) {
     res.status(400).json({ message: "Name must be more than 3 characters" });
     return;
   }
@@ -23,15 +23,36 @@ export const signup = async (req: Request, res: Response) => {
     res.status(400).json({ message: "Email must be in the form @octane-tech.io" });
     return;
   }
-    
+
   try {
     const existingUser = await findUserByEmail(email);
     if (existingUser){
-        res.status(409).json({ message: "User already exists" });
-        return;
+      res.status(409).json({ message: "User already exists" });
+      return;
     }
-    await createUser({ name, email, password });
-    res.status(201).json({ message: "User registered successfully" });
+    const newUser = await createUser({ name, email, password }); // Should return the created user object
+    // Generate JWT token for the newly created user
+    const token = jwt.sign(
+      {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        status: newUser.status,
+      },
+      JWT_SECRET,
+      { expiresIn: "168h" }
+    );
+    res.status(201).json({
+      token,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+        status: newUser.status,
+      }
+    });
   } catch (err: any) {
     res.status(500).json({ message: err.message });
   }
@@ -76,4 +97,3 @@ export const login = async (req: Request, res: Response) => {
     res.status(500).json({ message: err.message });
   }
 };
-
