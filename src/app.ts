@@ -4,6 +4,6 @@ import userRoutes from './modules/user/user.routes.js';
 
 const app = express();
 app.use(express.json());
-app.use('/api/users', userRoutes);
+app.use('/api', userRoutes);
 
 export default app;
