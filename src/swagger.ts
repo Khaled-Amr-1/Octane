@@ -10,7 +10,7 @@ const options = {
     },
     servers: [{ url: "https://octane-nine.vercel.app" }],
   },
-  apis: ["./dist/src/modules/**/*.js"],
+  apis: ["./src/modules/**/*.ts"], // <--- CHANGE HERE
 };
 
 const swaggerSpec = swaggerJSDoc(options);
