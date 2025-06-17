@@ -12,10 +12,11 @@ export const getNfcs = async (req: Request, res: Response) => {
     let todayStatement = `today you submitted ${stats.today_cards_submitted} cards`;
     let periodStatement = "";
 
+    let formattedDate = "";
     if (stats.updated_at) {
       const date = new Date(stats.updated_at);
       // Option 1: "YYYY-MM-DD"
-      const formattedDate = date.toISOString().split("T")[0];
+      formattedDate = date.toISOString().split("T")[0];
       // Option 2: "Jun 17, 2025"
       // const formattedDate = date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
       periodStatement = `from ${formattedDate} you submitted ${stats.submitted} out of ${stats.allocated}`;
@@ -26,6 +27,11 @@ export const getNfcs = async (req: Request, res: Response) => {
     res.json({
       today: todayStatement,
       period: periodStatement,
+      today_cards_submitted: stats.today_cards_submitted,
+      submitted: stats.submitted,
+      allocated: stats.allocated,
+      date:formattedDate
+
     });
     return;
   } catch (err) {
