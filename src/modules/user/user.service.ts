@@ -39,3 +39,22 @@ export const getNfcsStats = async (userId: number) => {
   const { rows } = await pool.query(query, [userId]);
   return rows[0];
 };
+
+export const insertAcknowledgment = async (
+  userId: number,
+  companyId: number,
+  cardsSubmitted: number,
+  submissionType: string,
+  deliveryMethod: string,
+  imageUrl: string
+) => {
+  const query = `
+    INSERT INTO public.acknowledgments
+      (user_id, company_id, cards_submitted, submission_type, delivery_method, image, updated_at)
+    VALUES ($1, $2, $3, $4, $5, $6, NOW())
+    RETURNING id, user_id, company_id, cards_submitted, submission_type, delivery_method, image, updated_at;
+  `;
+  const values = [userId, companyId, cardsSubmitted, submissionType, deliveryMethod, imageUrl];
+  const { rows } = await pool.query(query, values);
+  return rows[0];
+};
