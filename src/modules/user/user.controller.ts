@@ -6,7 +6,7 @@ export const getNfcs = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     const stats = await getNfcsStats(userId);
 
-    let todayStatement = `today you submitted ${stats.today_cards_submitted}`;
+    let todayStatement = `today you submitted ${stats.today_cards_submitted} cards`;
     let periodStatement = "";
 
     if (stats.updated_at) {
