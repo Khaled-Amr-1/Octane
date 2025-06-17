@@ -54,7 +54,7 @@ export const signup = async (req: Request, res: Response) => {
       }
     });
   } catch (err: any) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Something went wrong" });
   }
 };
 
@@ -94,6 +94,6 @@ export const login = async (req: Request, res: Response) => {
       },
     });
   } catch (err: any) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Something went wrong" });
   }
 };

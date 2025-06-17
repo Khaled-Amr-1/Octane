@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { getUsers } from "./user.controller.js";
+import { getNfcs } from "./user.controller.js";
+import { verifyToken } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 
-router.get("/users", getUsers);
-
+// GET /nfcs
+router.get("/nfcs", verifyToken, getNfcs);
 
 export default router;
