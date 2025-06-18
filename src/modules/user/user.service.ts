@@ -93,7 +93,9 @@ export const getAcknowledgmentsHistory = async (userId: number) => {
   const { rows } = await pool.query(historyQuery, [userId, latestAllocation]);
   // Format response as requested
   return rows.map((row) => ({
-    submission_date: row.submission_date,
+    submission_date: row.submission_date
+    ? new Date(row.submission_date).toISOString().split("T")[0]
+      : null,
     company: {
       id: row.company_id,
       code: row.company_code,
