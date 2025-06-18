@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { getNfcsStats } from "./user.service.js";
 import { uploadToCloudinary } from "../../utils/cloudinary.js";
-import { insertAcknowledgment } from "./user.service.js";
+import { insertAcknowledgment, getAcknowledgmentsHistory } from "./user.service.js";
 
 
 export const getNfcs = async (req: Request, res: Response) => {
@@ -81,6 +81,18 @@ export const postAcknowledgment = async (req: Request, res: Response) => {
     );
 
     res.status(201).json({ acknowledgment: record });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getAcknowledgments = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const history = await getAcknowledgmentsHistory(userId);
+
+    res.json({ acknowledgments: history });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
