@@ -59,14 +59,59 @@ export const getNfcs = async (req: Request, res: Response) => {
 
 const SUBMISSION_TYPES = ['replacement', 'existing_customer', 'new_customer'];
 const DELIVERY_METHODS = ['office_receival', 'octane_employee', 'aramex'];
+const STATE_TIMES = ['on-Time', 'Late']; // Add this constant
+
+
+// export const postAcknowledgment = async (req: Request, res: Response) => {
+//   try {
+//     const userId = (req as any).user.id; // From the JWT, not request body!
+//     const { company_id, cards_submitted, submission_type, delivery_method } = req.body;
+
+//     // Validate required fields
+//     if (!company_id || !cards_submitted || !submission_type || !delivery_method) {
+//       res.status(400).json({ message: "All fields are required" });
+//       return;
+//     }
+//     if (!SUBMISSION_TYPES.includes(submission_type)) {
+//       res.status(400).json({ message: "Invalid submission_type" });
+//       return;
+//     }
+//     if (!DELIVERY_METHODS.includes(delivery_method)) {
+//       res.status(400).json({ message: "Invalid delivery_method" });
+//       return;
+//     }
+
+//     let imageUrl = "";
+//     if (req.file) {
+//       imageUrl = await uploadToCloudinary(req.file.buffer, `acknowledgment_${Date.now()}`);
+//     } else {
+//       res.status(400).json({ message: "Image file is required" });
+//       return;
+//     }
+
+//     const record = await insertAcknowledgment(
+//       userId,
+//       Number(company_id),
+//       Number(cards_submitted),
+//       submission_type,
+//       delivery_method,
+//       imageUrl
+//     );
+
+//     res.status(201).json({ acknowledgment: record });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// };
 
 export const postAcknowledgment = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id; // From the JWT, not request body!
-    const { company_id, cards_submitted, submission_type, delivery_method } = req.body;
+    const { company_id, cards_submitted, submission_type, delivery_method, state_time } = req.body;
 
     // Validate required fields
-    if (!company_id || !cards_submitted || !submission_type || !delivery_method) {
+    if (!company_id || !cards_submitted || !submission_type || !delivery_method || !state_time) {
       res.status(400).json({ message: "All fields are required" });
       return;
     }
@@ -76,6 +121,10 @@ export const postAcknowledgment = async (req: Request, res: Response) => {
     }
     if (!DELIVERY_METHODS.includes(delivery_method)) {
       res.status(400).json({ message: "Invalid delivery_method" });
+      return;
+    }
+    if (!STATE_TIMES.includes(state_time)) {
+      res.status(400).json({ message: "Invalid state_time" });
       return;
     }
 
@@ -93,7 +142,8 @@ export const postAcknowledgment = async (req: Request, res: Response) => {
       Number(cards_submitted),
       submission_type,
       delivery_method,
-      imageUrl
+      imageUrl,
+      state_time // Pass state_time to the service
     );
 
     res.status(201).json({ acknowledgment: record });
