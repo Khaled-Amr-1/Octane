@@ -79,7 +79,8 @@ export const getAcknowledgmentsHistory = async (userId: number) => {
       a.cards_submitted,
       a.submission_type,
       a.delivery_method,
-      a.image
+      a.image,
+      a.state_time -- <-- Include state_time here
     FROM public.acknowledgments a
     JOIN public.companies c ON a.company_id = c.id
     WHERE a.user_id = $1
@@ -90,7 +91,7 @@ export const getAcknowledgmentsHistory = async (userId: number) => {
   // Format response as requested
   return rows.map((row) => ({
     submission_date: row.submission_date
-    ? new Date(row.submission_date).toISOString().split("T")[0]
+      ? new Date(row.submission_date).toISOString().split("T")[0]
       : null,
     company: {
       id: row.company_id,
@@ -101,5 +102,6 @@ export const getAcknowledgmentsHistory = async (userId: number) => {
     submission_type: row.submission_type,
     delivery_method: row.delivery_method,
     image: row.image,
+    state_time: row.state_time, // <-- Add state_time to the response object
   }));
 };
