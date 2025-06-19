@@ -54,8 +54,8 @@ export const getNfcsStats = async (userId: number) => {
         SELECT SUM(allocated)
         FROM public.nfcs, month_range
         WHERE user_id = $1
-        AND updated_at::date >= month_range.first_day
-        AND updated_at::date <= month_range.last_day
+        AND day_allocated::date >= month_range.first_day
+        AND day_allocated::date <= month_range.last_day
       ), 0) AS allocated,
       COALESCE((
         SELECT SUM(cards_submitted)
