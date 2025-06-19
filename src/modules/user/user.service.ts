@@ -5,37 +5,66 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+// export const getNfcsStats = async (userId: number) => {
+//   const query = `
+//     WITH last_nfc_date AS (
+//       SELECT MAX(updated_at::date) AS latest_date
+//       FROM public.nfcs
+//       WHERE user_id = $1
+//     )
+//     SELECT
+//       COALESCE((
+//         SELECT SUM(cards_submitted)
+//         FROM public.acknowledgments
+//         WHERE updated_at::date = CURRENT_DATE
+//         AND user_id = $1
+//       ), 0) AS today_cards_submitted,
+//       last_nfc_date.latest_date AS updated_at,
+//       COALESCE((
+//         SELECT SUM(allocated)
+//         FROM public.nfcs
+//         WHERE user_id = $1
+//         AND updated_at::date = last_nfc_date.latest_date
+//       ), 0) AS allocated,
+//       COALESCE((
+//         SELECT SUM(cards_submitted)
+//         FROM public.acknowledgments
+//         WHERE user_id = $1
+//         AND updated_at::date >= last_nfc_date.latest_date
+//         AND updated_at::date <= CURRENT_DATE
+//       ), 0) AS submitted
+//     FROM last_nfc_date;
+//   `;
+
+//   const { rows } = await pool.query(query, [userId]);
+//   return rows[0];
+// };
+
+
+// Helper to get first and last day of the current month in SQL
 export const getNfcsStats = async (userId: number) => {
   const query = `
-    WITH last_nfc_date AS (
-      SELECT MAX(updated_at::date) AS latest_date
-      FROM public.nfcs
-      WHERE user_id = $1
+    WITH month_range AS (
+      SELECT
+        date_trunc('month', CURRENT_DATE) AS first_day,
+        (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::date AS last_day
     )
     SELECT
       COALESCE((
-        SELECT SUM(cards_submitted)
-        FROM public.acknowledgments
-        WHERE updated_at::date = CURRENT_DATE
-        AND user_id = $1
-      ), 0) AS today_cards_submitted,
-      last_nfc_date.latest_date AS updated_at,
-      COALESCE((
         SELECT SUM(allocated)
-        FROM public.nfcs
+        FROM public.nfcs, month_range
         WHERE user_id = $1
-        AND updated_at::date = last_nfc_date.latest_date
+        AND updated_at::date >= month_range.first_day
+        AND updated_at::date <= month_range.last_day
       ), 0) AS allocated,
       COALESCE((
         SELECT SUM(cards_submitted)
-        FROM public.acknowledgments
+        FROM public.acknowledgments, month_range
         WHERE user_id = $1
-        AND updated_at::date >= last_nfc_date.latest_date
-        AND updated_at::date <= CURRENT_DATE
+        AND updated_at::date >= month_range.first_day
+        AND updated_at::date <= month_range.last_day
       ), 0) AS submitted
-    FROM last_nfc_date;
   `;
-
   const { rows } = await pool.query(query, [userId]);
   return rows[0];
 };
@@ -107,3 +136,5 @@ export const getAcknowledgmentsHistory = async (userId: number) => {
     image: row.image,
   }));
 };
+
+

@@ -4,6 +4,7 @@ import { verifyToken } from "../../middlewares/auth.middleware.js";
 import { postAcknowledgment, getAcknowledgments } from "../user/user.controller.js";
 import { upload } from "../../middlewares/upload.middleware.js";
 
+
 const router = Router();
 
 // GET /nfcs
@@ -16,6 +17,5 @@ router.post(
   upload.single("image"), // image field in form-data
   postAcknowledgment
 );
-
 
 export default router;
