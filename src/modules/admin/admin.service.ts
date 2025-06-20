@@ -96,3 +96,8 @@ export const replaceCompaniesBulk = async (
     client.release();
   }
 };
+
+export const getAllCompanies = async () => {
+  const { rows } = await pool.query("SELECT id, name, code FROM public.companies ORDER BY id");
+  return rows;
+};

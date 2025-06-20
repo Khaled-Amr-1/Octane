@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk, replaceCompaniesBulk } from "./admin.service.js";
+import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk, replaceCompaniesBulk, getAllCompanies } from "./admin.service.js";
 import XLSX from "xlsx";
 
 // Admin: Allocate NFCs to a user
@@ -140,6 +140,16 @@ export const replaceAllCompanies = async (req: Request, res: Response) => {
 
     res.status(201).json({ message: "Companies replaced successfully", count: toInsert.length });
   } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getCompanies = async (req: Request, res: Response) => {
+  try {
+    const companies = await getAllCompanies();
+    res.json({ companies });
+  } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
   }
