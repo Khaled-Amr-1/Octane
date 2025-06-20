@@ -2,7 +2,7 @@ import { Router } from "express";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
 import { allocateNfcsToUser, suspendUser } from "./admin.controller.js";
 import { authorizeRoles } from "../../middlewares/authorize.middleware.js";
-import { deleteAcknowledgmentsByMonth } from "./admin.controller.js";
+import { deleteAcknowledgmentsByMonth, replaceAllCompanies } from "./admin.controller.js";
 import { addCompaniesFromExcel } from "./admin.controller.js";
 import { uploadExcel } from "../../middlewares/uploadExcel.middleware.js";
 
@@ -41,5 +41,12 @@ router.post(
   addCompaniesFromExcel
 );
 
+router.put(
+  "/companies",
+  verifyToken,
+  authorizeRoles("admin"),
+  uploadExcel.single("file"),
+  replaceAllCompanies
+);
 
 export default router;

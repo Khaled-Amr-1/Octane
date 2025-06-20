@@ -74,3 +74,25 @@ export const addCompaniesBulk = async (
 
   await pool.query(query, params);
 };
+
+export const replaceCompaniesBulk = async (
+  companies: Array<{ name: string; code: string }>
+) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("DELETE FROM public.companies");
+    if (companies.length) {
+      const values = companies.map((c, i) => `($${i * 2 + 1}, $${i * 2 + 2})`);
+      const params = companies.flatMap((c) => [c.name, c.code]);
+      const query = `INSERT INTO public.companies (name, code) VALUES ${values.join(",")}`;
+      await client.query(query, params);
+    }
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+};

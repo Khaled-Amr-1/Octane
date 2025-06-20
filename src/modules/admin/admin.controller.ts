@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk } from "./admin.service.js";
+import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk, replaceCompaniesBulk } from "./admin.service.js";
 import XLSX from "xlsx";
 
 // Admin: Allocate NFCs to a user
@@ -96,6 +96,49 @@ export const addCompaniesFromExcel = async (req: Request, res: Response) => {
     await addCompaniesBulk(toInsert);
 
     res.status(201).json({ message: "Companies added successfully", count: toInsert.length });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const replaceAllCompanies = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ message: "No file uploaded" });
+      return;
+    }
+
+    // Parse Excel or CSV
+    const originalName = req.file.originalname.toLowerCase();
+    let companies: any[] = [];
+    if (originalName.endsWith(".csv")) {
+      const csvData = req.file.buffer.toString("utf-8");
+      const workbook = XLSX.read(csvData, { type: "string" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      companies = XLSX.utils.sheet_to_json(sheet);
+    } else {
+      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      companies = XLSX.utils.sheet_to_json(sheet);
+    }
+
+    // Validate
+    const toInsert: Array<{ name: string; code: string }> = [];
+    for (const row of companies as any[]) {
+      if (row.name && row.code) {
+        toInsert.push({ name: row.name, code: String(row.code) });
+      }
+    }
+    if (toInsert.length === 0) {
+      res.status(400).json({ message: "No valid rows found in the file" });
+      return;
+    }
+
+    // Replace all companies atomically
+    await replaceCompaniesBulk(toInsert);
+
+    res.status(201).json({ message: "Companies replaced successfully", count: toInsert.length });
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
