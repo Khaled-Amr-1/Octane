@@ -5,8 +5,6 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-
-
 // Helper to get first and last day of the current month in SQL
 export const getNfcsStats = async (userId: number) => {
   const query = `
@@ -50,21 +48,32 @@ export const insertAcknowledgment = async (
     VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)
     RETURNING id, user_id, company_id, cards_submitted, submission_type, delivery_method, image, updated_at, state_time;
   `;
-  const values = [userId, companyId, cardsSubmitted, submissionType, deliveryMethod, imageUrl, stateTime];
+  const values = [
+    userId,
+    companyId,
+    cardsSubmitted,
+    submissionType,
+    deliveryMethod,
+    imageUrl,
+    stateTime,
+  ];
   const { rows } = await pool.query(query, values);
   return rows[0];
 };
 
-
 type Period = "daily" | "weekly" | "monthly";
 
-export const getAcknowledgmentsHistory = async (userId: number, period: Period) => {
+export const getAcknowledgmentsHistory = async (
+  userId: number,
+  period: Period
+) => {
   let dateFilter = "";
 
   if (period === "daily") {
     dateFilter = "a.submission_date::date = CURRENT_DATE";
   } else if (period === "weekly") {
-    dateFilter = "a.submission_date::date >= (CURRENT_DATE - INTERVAL '6 days')";
+    dateFilter =
+      "a.submission_date::date >= (CURRENT_DATE - INTERVAL '6 days')";
   } else if (period === "monthly") {
     dateFilter = "a.submission_date::date >= date_trunc('month', CURRENT_DATE)";
   } else {

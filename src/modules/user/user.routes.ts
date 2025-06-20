@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { getNfcs } from "./user.controller.js";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
-import { postAcknowledgment, getAcknowledgments } from "../user/user.controller.js";
+import {
+  postAcknowledgment,
+  getAcknowledgments,
+} from "../user/user.controller.js";
 import { upload } from "../../middlewares/upload.middleware.js";
-
 
 const router = Router();
 
