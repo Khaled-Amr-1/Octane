@@ -66,25 +66,33 @@ export const addCompaniesFromExcel = async (req: Request, res: Response) => {
       return;
     }
 
-    // Parse Excel
-    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const companies = XLSX.utils.sheet_to_json(sheet);
+    const originalName = req.file.originalname.toLowerCase();
+    let companies: any[] = [];
+
+    if (originalName.endsWith(".csv")) {
+      const csvData = req.file.buffer.toString("utf-8");
+      const workbook = XLSX.read(csvData, { type: "string" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      companies = XLSX.utils.sheet_to_json(sheet);
+    } else {
+      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      companies = XLSX.utils.sheet_to_json(sheet);
+    }
 
     // Validate and extract data
     const toInsert: Array<{ name: string; code: string }> = [];
     for (const row of companies as any[]) {
       if (row.name && row.code) {
-        toInsert.push({ name: row.name, code: row.code });
+        toInsert.push({ name: row.name, code: String(row.code) });
       }
     }
 
     if (toInsert.length === 0) {
-      res.status(400).json({ message: "No valid rows found in Excel file" });
+      res.status(400).json({ message: "No valid rows found in file" });
       return;
     }
 
-    // Call service to insert companies
     await addCompaniesBulk(toInsert);
 
     res.status(201).json({ message: "Companies added successfully", count: toInsert.length });
