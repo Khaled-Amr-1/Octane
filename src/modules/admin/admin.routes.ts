@@ -3,6 +3,8 @@ import { verifyToken } from "../../middlewares/auth.middleware.js";
 import { allocateNfcsToUser, suspendUser } from "./admin.controller.js";
 import { authorizeRoles } from "../../middlewares/authorize.middleware.js";
 import { deleteAcknowledgmentsByMonth } from "./admin.controller.js";
+import { addCompaniesFromExcel } from "./admin.controller.js";
+import { uploadExcel } from "../../middlewares/uploadExcel.middleware.js";
 
 const router = Router();
 
@@ -30,6 +32,14 @@ router.delete(
   deleteAcknowledgmentsByMonth
 );
 
+
+router.post(
+  "/companies",
+  verifyToken,
+  authorizeRoles("admin"),
+  uploadExcel.single("file"), // "file" is the field name in form-data
+  addCompaniesFromExcel
+);
 
 
 export default router;

@@ -59,3 +59,18 @@ export const deleteAcknowledgmentsForMonth = async (month: string): Promise<numb
   );
   return deleteRes.rowCount ?? 0;
 };
+
+export const addCompaniesBulk = async (
+  companies: Array<{ name: string; code: string }>
+) => {
+  if (!companies.length) return;
+
+  // Prepare bulk insert statement
+  const values = companies.map(
+    (c, i) => `($${i * 2 + 1}, $${i * 2 + 2})`
+  );
+  const params = companies.flatMap((c) => [c.name, c.code]);
+  const query = `INSERT INTO public.companies (name, code) VALUES ${values.join(",")}`;
+
+  await pool.query(query, params);
+};

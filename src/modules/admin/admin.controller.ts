@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth } from "./admin.service.js";
+import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk } from "./admin.service.js";
+import XLSX from "xlsx";
 
 // Admin: Allocate NFCs to a user
 export const allocateNfcsToUser = async (req: Request, res: Response) => {
@@ -52,6 +53,42 @@ export const deleteAcknowledgmentsByMonth = async (req: Request, res: Response) 
     const deletedCount = await deleteAcknowledgmentsForMonth(month as string);
     res.json({ message: "Acknowledgments deleted successfully", deletedCount });
   } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+export const addCompaniesFromExcel = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ message: "No file uploaded" });
+      return;
+    }
+
+    // Parse Excel
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const companies = XLSX.utils.sheet_to_json(sheet);
+
+    // Validate and extract data
+    const toInsert: Array<{ name: string; code: string }> = [];
+    for (const row of companies as any[]) {
+      if (row.name && row.code) {
+        toInsert.push({ name: row.name, code: row.code });
+      }
+    }
+
+    if (toInsert.length === 0) {
+      res.status(400).json({ message: "No valid rows found in Excel file" });
+      return;
+    }
+
+    // Call service to insert companies
+    await addCompaniesBulk(toInsert);
+
+    res.status(201).json({ message: "Companies added successfully", count: toInsert.length });
+  } catch (err: any) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
   }
