@@ -2,6 +2,7 @@ import { Router } from "express";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
 import { allocateNfcsToUser, suspendUser } from "./admin.controller.js";
 import { authorizeRoles } from "../../middlewares/authorize.middleware.js";
+import { deleteAcknowledgmentsByMonth } from "./admin.controller.js";
 
 const router = Router();
 
@@ -21,6 +22,13 @@ router.post(
   suspendUser
 );
 
+
+router.delete(
+  "/acknowledgments",
+  verifyToken,
+  authorizeRoles("admin"),
+  deleteAcknowledgmentsByMonth
+);
 
 
 

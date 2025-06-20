@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { allocateNfcsForUser, suspendUserById } from "./admin.service.js";
+import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth } from "./admin.service.js";
 
 // Admin: Allocate NFCs to a user
 export const allocateNfcsToUser = async (req: Request, res: Response) => {
@@ -36,6 +36,21 @@ export const suspendUser = async (req: Request, res: Response) => {
     } else {
       res.status(404).json({ message: "User not found or already suspended" });
     }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const deleteAcknowledgmentsByMonth = async (req: Request, res: Response) => {
+  try {
+    const { month } = req.query; // expected format: "2025-06"
+    if (!month || !/^\d{4}-\d{2}$/.test(month as string)) {
+      res.status(400).json({ message: "Invalid or missing month. Use ?month=YYYY-MM" });
+      return ;
+    }
+    const deletedCount = await deleteAcknowledgmentsForMonth(month as string);
+    res.json({ message: "Acknowledgments deleted successfully", deletedCount });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
