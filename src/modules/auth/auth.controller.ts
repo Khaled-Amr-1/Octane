@@ -6,7 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 export const signup = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
-  if (!name || !email || !password){
+  if (!name || !email || !password) {
     res.status(400).json({ message: "All fields are required" });
     return;
   }
@@ -15,18 +15,22 @@ export const signup = async (req: Request, res: Response) => {
     return;
   }
   if (password.length <= 6) {
-    res.status(400).json({ message: "Password must be more than 6 characters" });
+    res
+      .status(400)
+      .json({ message: "Password must be more than 6 characters" });
     return;
   }
   const octaneEmailRegex = /^[a-zA-Z0-9._%+-]+@octane-tech\.io$/;
   if (!octaneEmailRegex.test(email)) {
-    res.status(400).json({ message: "Email must be in the form @octane-tech.io" });
+    res
+      .status(400)
+      .json({ message: "Email must be in the form @octane-tech.io" });
     return;
   }
 
   try {
     const existingUser = await findUserByEmail(email);
-    if (existingUser){
+    if (existingUser) {
       res.status(409).json({ message: "User already exists" });
       return;
     }
@@ -51,7 +55,7 @@ export const signup = async (req: Request, res: Response) => {
         email: newUser.email,
         role: newUser.role,
         status: newUser.status,
-      }
+      },
     });
   } catch (err: any) {
     res.status(500).json({ message: "Something went wrong" });
@@ -60,17 +64,25 @@ export const signup = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
-  if (!email || !password){
+  if (!email || !password) {
     res.status(400).json({ message: "Email and password are required" });
     return;
   }
 
   try {
     const user = await findUserByEmail(email);
-    if (!user || user.password !== password){
+    if (!user || user.password !== password) {
       res.status(401).json({ message: "Invalid credentials" });
       return;
     }
+
+    if (user.status === "suspended") {
+      res
+        .status(403)
+        .json({ message: "Account suspended. Please contact support." });
+      return;
+    }
+
     const token = jwt.sign(
       {
         id: user.id,
