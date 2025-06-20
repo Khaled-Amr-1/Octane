@@ -7,7 +7,7 @@ const router = Router();
 
 // Admin: Allocate NFCs to a user
 router.post(
-  "/admin/users/allocate/:userId",
+  "/users/allocate/:userId",
   verifyToken,
     authorizeRoles("admin"), // Only allow admin role
   allocateNfcsToUser
