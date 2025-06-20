@@ -55,20 +55,21 @@ export const insertAcknowledgment = async (
   return rows[0];
 };
 
-export const getAcknowledgmentsHistory = async (userId: number) => {
-  // 1. Get latest allocation date for this user from the nfcs table.
-  // 2. Get all acknowledgment records for this user where submission_date >= latest allocation date, ordered by submission_date DESC.
-  // 3. Join companies for code and name.
 
-  const allocationDateQuery = `
-    SELECT MAX(day_allocated::date) AS latest_allocation
-    FROM public.nfcs
-    WHERE user_id = $1
-  `;
-  const { rows: allocationRows } = await pool.query(allocationDateQuery, [userId]);
-  const latestAllocation = allocationRows[0]?.latest_allocation;
+type Period = "daily" | "weekly" | "monthly";
 
-  if (!latestAllocation) return []; // No allocation, no history
+export const getAcknowledgmentsHistory = async (userId: number, period: Period) => {
+  let dateFilter = "";
+
+  if (period === "daily") {
+    dateFilter = "a.submission_date::date = CURRENT_DATE";
+  } else if (period === "weekly") {
+    dateFilter = "a.submission_date::date >= (CURRENT_DATE - INTERVAL '6 days')";
+  } else if (period === "monthly") {
+    dateFilter = "a.submission_date::date >= date_trunc('month', CURRENT_DATE)";
+  } else {
+    throw new Error("Invalid period");
+  }
 
   const historyQuery = `
     SELECT
@@ -80,15 +81,16 @@ export const getAcknowledgmentsHistory = async (userId: number) => {
       a.submission_type,
       a.delivery_method,
       a.image,
-      a.state_time -- <-- Include state_time here
+      a.state_time
     FROM public.acknowledgments a
     JOIN public.companies c ON a.company_id = c.id
     WHERE a.user_id = $1
-      AND a.submission_date::date >= $2
+      AND ${dateFilter}
     ORDER BY a.submission_date DESC
   `;
-  const { rows } = await pool.query(historyQuery, [userId, latestAllocation]);
-  // Format response as requested
+  const params = [userId];
+  const { rows } = await pool.query(historyQuery, params);
+
   return rows.map((row) => ({
     submission_date: row.submission_date
       ? new Date(row.submission_date).toISOString().split("T")[0]
@@ -102,6 +104,6 @@ export const getAcknowledgmentsHistory = async (userId: number) => {
     submission_type: row.submission_type,
     delivery_method: row.delivery_method,
     image: row.image,
-    state_time: row.state_time, // <-- Add state_time to the response object
+    state_time: row.state_time,
   }));
 };

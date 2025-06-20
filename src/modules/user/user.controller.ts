@@ -153,11 +153,22 @@ export const postAcknowledgment = async (req: Request, res: Response) => {
   }
 };
 
+
+const allowedPeriods = ["daily", "weekly", "monthly"];
+
 export const getAcknowledgments = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const history = await getAcknowledgmentsHistory(userId);
+    const period = req.query.period as string;
 
+    if (!period || !allowedPeriods.includes(period)) {
+      res.status(400).json({
+        message: "Invalid or missing period. Use ?period=daily|weekly|monthly",
+      });
+      return;
+    }
+
+    const history = await getAcknowledgmentsHistory(userId, period as "daily" | "weekly" | "monthly");
     res.json({ acknowledgments: history });
   } catch (err) {
     console.error(err);
