@@ -23,20 +23,18 @@ export const deleteFromCloudinaryByUrl = async (url: string) => {
   const cloudinaryHost = "res.cloudinary.com";
   if (!url.includes(cloudinaryHost)) return false;
 
-  // Example URL: https://res.cloudinary.com/<cloud_name>/image/upload/v<number>/<public_id>.<ext>
-  const parts = url.split("/");
-  const uploadIndex = parts.indexOf("upload");
-  if (uploadIndex === -1 || !parts[uploadIndex + 2]) return false;
-
-  // public_id may be in the form of folder/file (without extension)
-  const publicIdWithExt = parts.slice(uploadIndex + 1).join("/"); // includes version and file name
-  // Remove version and extension
-  // Example: v1750343132/acknowledgment_1750343131895.png -> acknowledgment_1750343131895
-  const fileWithExt = parts[uploadIndex + 2]; // e.g., acknowledgment_1750343131895.png
-  const fileName = fileWithExt.split(".")[0]; // acknowledgment_1750343131895
-  const publicId = parts.slice(uploadIndex + 1, uploadIndex + 2).join("/") + "/" + fileName;
-
   try {
+    // Extract the part after '/upload/' (removes query params)
+    const uploadParts = url.split("/upload/");
+    if (uploadParts.length < 2) return false;
+
+    let afterUpload = uploadParts[1].split(/[?#]/)[0]; // remove ? or # fragments if any
+    // Remove version if present (starts with v + digits + /)
+    afterUpload = afterUpload.replace(/^v\d+\//, "");
+
+    // Remove file extension
+    const publicId = afterUpload.replace(/\.[^.]+$/, "");
+
     await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
     return true;
   } catch (err) {
