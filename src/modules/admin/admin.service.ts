@@ -19,3 +19,14 @@ export const allocateNfcsForUser = async (
   const { rows } = await pool.query(query, [userId, allocated]);
   return rows[0];
 };
+
+export const suspendUserById = async (userId: number): Promise<boolean> => {
+  const query = `
+    UPDATE public.users
+    SET status = 'suspended', updated_at = CURRENT_TIMESTAMP
+    WHERE id = $1 AND status != 'suspended'
+    RETURNING id
+  `;
+  const { rowCount } = await pool.query(query, [userId]);
+  return (rowCount ?? 0) > 0;
+};

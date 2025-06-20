@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
-import { allocateNfcsToUser } from "./admin.controller.js";
+import { allocateNfcsToUser, suspendUser } from "./admin.controller.js";
 import { authorizeRoles } from "../../middlewares/authorize.middleware.js";
 
 const router = Router();
@@ -12,5 +12,16 @@ router.post(
     authorizeRoles("admin"), // Only allow admin role
   allocateNfcsToUser
 );
+
+// Admin: Suspend a user account
+router.post(
+  "/users/suspend/:userId",
+  verifyToken,
+  authorizeRoles("admin"),
+  suspendUser
+);
+
+
+
 
 export default router;
