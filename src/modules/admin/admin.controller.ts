@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk, replaceCompaniesBulk, getAllCompanies } from "./admin.service.js";
+import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk, replaceCompaniesBulk, getAllCompanies, getAcknowledgmentsForPeriod } from "./admin.service.js";
 import XLSX from "xlsx";
 
 // Admin: Allocate NFCs to a user
@@ -149,6 +149,51 @@ export const getCompanies = async (req: Request, res: Response) => {
   try {
     const companies = await getAllCompanies();
     res.json({ companies });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const exportAcknowledgmentsReport = async (req: Request, res: Response) => {
+  try {
+    const { start, end } = req.query;
+    if (!start || !end) {
+      res.status(400).json({ message: "start and end date are required" });
+      return;
+    }
+
+    // Fetch data with user name and company name
+    const data = await getAcknowledgmentsForPeriod(start as string, end as string);
+
+    // Prepare rows for Excel
+    const rows = data.map(row => ({
+      ID: row.id,
+      User: row.user_name,
+      Company: row.company_name,
+      Company_Code: row.company_code,
+      Cards_Submitted: row.cards_submitted,
+      Submission_Type: row.submission_type,
+      Delivery_Method: row.delivery_method,
+      State_Time: row.state_time,
+      Image: row.image,
+      Submission_Date: row.submission_date,
+      Updated_At: row.updated_at
+    }));
+
+    // Create worksheet and workbook
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Acknowledgments");
+
+    // Generate buffer
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    // Set headers and send file
+    res.setHeader("Content-Disposition", `attachment; filename="acknowledgments_${start}_to_${end}.xlsx"`);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.send(buffer);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });

@@ -101,3 +101,29 @@ export const getAllCompanies = async () => {
   const { rows } = await pool.query("SELECT id, name, code FROM public.companies ORDER BY id");
   return rows;
 };
+
+export const getAcknowledgmentsForPeriod = async (start: string, end: string) => {
+  const query = `
+    SELECT 
+      a.id,
+      u.name AS user_name,
+      c.name AS company_name,
+      c.code AS company_code,
+      a.cards_submitted,
+      a.submission_type,
+      a.delivery_method,
+      a.state_time,
+      a.image,
+      a.submission_date,
+      a.updated_at
+    FROM public.acknowledgments a
+    JOIN public.users u ON a.user_id = u.id
+    JOIN public.companies c ON a.company_id = c.id
+    WHERE a.submission_date::date >= $1
+      AND a.submission_date::date <= $2
+    ORDER BY a.submission_date ASC
+  `;
+  const params = [start, end];
+  const { rows } = await pool.query(query, params);
+  return rows;
+};
