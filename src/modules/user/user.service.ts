@@ -8,26 +8,21 @@ const pool = new Pool({
 // Helper to get first and last day of the current month in SQL
 export const getNfcsStats = async (userId: number) => {
   const query = `
-    WITH month_range AS (
-      SELECT
-        date_trunc('month', CURRENT_DATE) AS first_day,
-        (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month - 1 day')::date AS last_day
-    )
-    SELECT
-      COALESCE((
-        SELECT SUM(allocated)
-        FROM public.nfcs, month_range
-        WHERE user_id = $1
-        AND day_allocated::date >= month_range.first_day
-        AND day_allocated::date <= month_range.last_day
-      ), 0) AS allocated,
-      COALESCE((
-        SELECT SUM(cards_submitted)
-        FROM public.acknowledgments, month_range
-        WHERE user_id = $1
-        AND updated_at::date >= month_range.first_day
-        AND updated_at::date <= month_range.last_day
-      ), 0) AS submitted
+  SELECT
+    COALESCE((
+      SELECT SUM(allocated)
+      FROM public.nfcs
+      WHERE user_id = $1
+        AND day_allocated >= date_trunc('month', CURRENT_DATE)
+        AND day_allocated < (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month')
+    ), 0) AS allocated,
+    COALESCE((
+      SELECT SUM(cards_submitted)
+      FROM public.acknowledgments
+      WHERE user_id = $1
+        AND updated_at >= date_trunc('month', CURRENT_DATE)
+        AND updated_at < (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month')
+    ), 0) AS submitted
   `;
   const { rows } = await pool.query(query, [userId]);
   return rows[0];
