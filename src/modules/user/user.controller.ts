@@ -48,10 +48,6 @@ export const getNfcs = async (req: Request, res: Response) => {
 
     const stats = await getNfcsStats(userId);
     console.timeEnd("query");
-    if (!stats) {
-      res.status(404).json({ message: "No NFC stats found for this user" });
-      return;
-    }
 
     res.json({
       allocated: stats.allocated,
