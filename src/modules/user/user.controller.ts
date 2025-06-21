@@ -42,23 +42,33 @@ import {
 // };
 
 export const getNfcs = async (req: Request, res: Response) => {
+  console.time("⏱ handler total");
   try {
     const userId = (req as any).user.id;
-    console.time("query");
-
+    console.time("⏱ query");
     const stats = await getNfcsStats(userId);
-    console.timeEnd("query");
+    console.timeEnd("⏱ query");
 
+    if (!stats) {
+      console.timeEnd("⏱ handler total");
+      res.status(404).json({ message: "No NFC stats found for this user" });
+      return;
+    }
+
+    console.time("⏱ res.json");
     res.json({
       allocated: stats.allocated,
       submitted: stats.submitted,
     });
-    return;
+    console.timeEnd("⏱ res.json");
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
+  } finally {
+    console.timeEnd("⏱ handler total");
   }
 };
+
 
 const SUBMISSION_TYPES = ["replacement", "existing_customer", "new_customer"];
 const DELIVERY_METHODS = ["office_receival", "octane_employee", "aramex"];
