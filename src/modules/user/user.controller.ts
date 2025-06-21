@@ -44,7 +44,14 @@ import {
 export const getNfcs = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
+    console.time("query");
+
     const stats = await getNfcsStats(userId);
+    console.timeEnd("query");
+    if (!stats) {
+      res.status(404).json({ message: "No NFC stats found for this user" });
+      return;
+    }
 
     res.json({
       allocated: stats.allocated,
