@@ -8,21 +8,23 @@ const pool = new Pool({
 // Helper to get first and last day of the current month in SQL
 export const getNfcsStats = async (userId: number) => {
   const query = `
-  SELECT
-    COALESCE((
-      SELECT SUM(allocated)
+  WITH
+    allocated_sum AS (
+      SELECT SUM(allocated) AS allocated
       FROM public.nfcs
       WHERE user_id = $1
         AND day_allocated >= date_trunc('month', CURRENT_DATE)
         AND day_allocated < (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month')
-    ), 0) AS allocated,
-    COALESCE((
-      SELECT SUM(cards_submitted)
+    ),
+    submitted_sum AS (
+      SELECT SUM(cards_submitted) AS submitted
       FROM public.acknowledgments
       WHERE user_id = $1
         AND updated_at >= date_trunc('month', CURRENT_DATE)
         AND updated_at < (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month')
-    ), 0) AS submitted
+    )
+  SELECT COALESCE(a.allocated, 0) AS allocated, COALESCE(s.submitted, 0) AS submitted
+  FROM allocated_sum a, submitted_sum s;
   `;
   const { rows } = await pool.query(query, [userId]);
   return rows[0];
