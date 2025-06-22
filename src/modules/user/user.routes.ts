@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getNfcs } from "./user.controller.js";
+import { getNfcs, testRoute } from "./user.controller.js";
 import { verifyToken } from "../../middlewares/auth.middleware.js";
 import {
   postAcknowledgment,
@@ -18,8 +18,6 @@ router.post(
   upload.single("image"), // image field in form-data
   postAcknowledgment
 );
-router.get('test', (req, res) => {
-  res.json({ message: "Test route works!" });
-});
+router.get('test', verifyToken, testRoute);
 
 export default router;

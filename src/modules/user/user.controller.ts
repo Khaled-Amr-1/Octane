@@ -165,3 +165,6 @@ export const getAcknowledgments = async (req: Request, res: Response) => {
   }
 };
 
+export const testRoute = (req: Request, res: Response) => {
+  res.json({ message: "Test route works!" });
+}
