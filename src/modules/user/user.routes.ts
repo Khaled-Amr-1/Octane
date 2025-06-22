@@ -11,6 +11,7 @@ const router = Router();
 // GET /nfcs
 router.get("/nfcs", verifyToken, getNfcs);
 router.get("/acknowledgments", verifyToken, getAcknowledgments);
+router.get("/test", verifyToken, testRoute);
 
 router.post(
   "/acknowledgments",
@@ -18,6 +19,4 @@ router.post(
   upload.single("image"), // image field in form-data
   postAcknowledgment
 );
-router.get("test", verifyToken, testRoute);
-
 export default router;
