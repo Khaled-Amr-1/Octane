@@ -20,4 +20,8 @@ router.post(
   postAcknowledgment
 );
 
+router.get("/testDbSpeed", (req, res) => {
+  res.json({ message: "Test DB Speed Endpoint" });
+});
+
 export default router;
