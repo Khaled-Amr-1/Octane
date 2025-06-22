@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { getNfcsStats } from "./user.service.js";
+
 import { uploadToCloudinary } from "../../utils/cloudinary.js";
 import {
   insertAcknowledgment,
@@ -40,6 +41,8 @@ import {
 //     res.status(500).json({ message: "Internal server error" });
 //   }
 // };
+
+
 
 export const getNfcs = async (req: Request, res: Response) => {
   console.time("⏱ handler total");
@@ -161,3 +164,4 @@ export const getAcknowledgments = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+

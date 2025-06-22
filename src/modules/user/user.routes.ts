@@ -6,7 +6,6 @@ import {
   getAcknowledgments,
 } from "../user/user.controller.js";
 import { upload } from "../../middlewares/upload.middleware.js";
-
 const router = Router();
 
 // GET /nfcs
@@ -19,9 +18,8 @@ router.post(
   upload.single("image"), // image field in form-data
   postAcknowledgment
 );
-
-router.get("/testDbSpeed", (req, res) => {
-  res.json({ message: "Test DB Speed Endpoint" });
+router.get('test', (req, res) => {
+  res.json({ message: "Test route works!" });
 });
 
 export default router;
