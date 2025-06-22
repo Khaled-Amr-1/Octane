@@ -18,6 +18,6 @@ router.post(
   upload.single("image"), // image field in form-data
   postAcknowledgment
 );
-router.get('test', verifyToken, testRoute);
+router.get("test", verifyToken, testRoute);
 
 export default router;
