@@ -1,10 +1,10 @@
-import { Pool } from "pg";
+import pool from '../..//db.js' ;
 import { deleteFromCloudinaryByUrl } from "../../utils/cloudinary.js";
 
-const pool = new Pool({
-  // Your database config here, or use env variables
-  connectionString: process.env.DATABASE_URL,
-});
+// const pool = new Pool({
+//   // Your database config here, or use env variables
+//   connectionString: process.env.DATABASE_URL,
+// });
 
 
 export const allocateNfcsForUser = async (

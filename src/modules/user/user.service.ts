@@ -1,9 +1,9 @@
-import { Pool } from "pg";
+import pool from '../../db.js';
 
-const pool = new Pool({
-  // Your database config here, or use env variables
-  connectionString: process.env.DATABASE_URL,
-});
+// const pool = new Pool({
+//   // Your database config here, or use env variables
+//   connectionString: process.env.DATABASE_URL,
+// });
 
 // Helper to get first and last day of the current month in SQL
 export const getNfcsStats = async (userId: number) => {
