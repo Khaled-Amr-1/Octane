@@ -1,6 +1,7 @@
 import pool from "../../db.js";
 
 export interface User {
+  image: any;
   id: number;
   name: string;
   email: string;

@@ -19,4 +19,17 @@ router.post(
   upload.single("image"), // image field in form-data
   postAcknowledgment
 );
+
+
+
+
+
+
+
+
+
+
+
+
+
 export default router;

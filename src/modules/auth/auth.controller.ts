@@ -43,6 +43,7 @@ export const signup = async (req: Request, res: Response) => {
         email: newUser.email,
         role: newUser.role,
         status: newUser.status,
+        image: newUser.image,
       },
       JWT_SECRET,
       { expiresIn: "168h" }
@@ -55,6 +56,7 @@ export const signup = async (req: Request, res: Response) => {
         email: newUser.email,
         role: newUser.role,
         status: newUser.status,
+        image: newUser.image,
       },
     });
   } catch (err: any) {
@@ -90,6 +92,7 @@ export const login = async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
         status: user.status,
+        image: user.image,
       },
       JWT_SECRET,
       { expiresIn: "168h" }
@@ -103,6 +106,7 @@ export const login = async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
         status: user.status,
+        image: user.image,
       },
     });
   } catch (err: any) {
