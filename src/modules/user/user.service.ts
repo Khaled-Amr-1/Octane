@@ -30,20 +30,21 @@ export const getNfcsStats = async (userId: number) => {
   return rows[0];
 };
 
-export const insertAcknowledgment = async (
+export const insertAcknowledgmentWithCompany = async (
   userId: number,
   companyId: number,
   cardsSubmitted: number,
   submissionType: string,
   deliveryMethod: string,
   imageUrl: string,
-  stateTime: string // Add this argument
+  stateTime: string
 ) => {
+  // Insert the acknowledgment and get the date
   const query = `
     INSERT INTO public.acknowledgments
       (user_id, company_id, cards_submitted, submission_type, delivery_method, image, updated_at, state_time)
     VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7)
-    RETURNING id, user_id, company_id, cards_submitted, submission_type, delivery_method, image, updated_at, state_time;
+    RETURNING id, company_id, cards_submitted, submission_type, delivery_method, image, updated_at, state_time;
   `;
   const values = [
     userId,
@@ -55,7 +56,29 @@ export const insertAcknowledgment = async (
     stateTime,
   ];
   const { rows } = await pool.query(query, values);
-  return rows[0];
+  const ack = rows[0];
+
+  // Fetch company details
+  const companyRes = await pool.query(
+    "SELECT id, code, name FROM public.companies WHERE id = $1",
+    [companyId]
+  );
+  const company = companyRes.rows[0];
+
+  // Format the response object
+  return {
+    submission_date: ack.updated_at ? new Date(ack.updated_at).toISOString().split("T")[0] : null,
+    company: {
+      id: company.id,
+      code: company.code,
+      name: company.name,
+    },
+    cards_submitted: ack.cards_submitted,
+    submission_type: ack.submission_type,
+    delivery_method: ack.delivery_method,
+    image: ack.image,
+    state_time: ack.state_time,
+  };
 };
 
 type Period = "daily" | "weekly" | "monthly";
