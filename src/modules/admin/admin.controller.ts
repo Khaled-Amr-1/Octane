@@ -105,28 +105,43 @@ export const exportAcknowledgmentsReport = async (req: Request, res: Response) =
   }
 };
 
+
+function getField(row: any, possibleKeys: string[]): string | undefined {
+  for (let key of Object.keys(row)) {
+    let trimmed = key.trim().toLowerCase();
+    for (let possible of possibleKeys) {
+      if (trimmed === possible.trim().toLowerCase()) {
+        return row[key];
+      }
+    }
+  }
+  return undefined;
+}
+
 // Helper to parse file buffer for .csv, .xlsx, .ods
 function parseCompaniesFromFile(file: Express.Multer.File): Array<{ name: string; code: string }> {
   const originalName = file.originalname.toLowerCase();
   let companies: any[] = [];
-  // CSV: treat buffer as utf-8 string
   if (originalName.endsWith(".csv")) {
     const csvData = file.buffer.toString("utf-8");
     const workbook = XLSX.read(csvData, { type: "string" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     companies = XLSX.utils.sheet_to_json(sheet);
   } else {
-    // .xlsx, .xls, .ods: treat as buffer
     const workbook = XLSX.read(file.buffer, { type: "buffer" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     companies = XLSX.utils.sheet_to_json(sheet);
   }
-  // Your file may have Arabic headers, so normalize
+  // LOG FIRST ROW TO DEBUG
+  if (companies.length > 0) console.log('First row keys:', Object.keys(companies[0]));
+
+  const nameKeys = ["name", "الإسم", "اسم", "Name"];
+  const codeKeys = ["code", "#", "كود", "Code"];
+
   const toInsert: Array<{ name: string; code: string }> = [];
   for (const row of companies) {
-    // Try matching Arabic or English headers
-    const name = row.name || row["الإسم"] || row["اسم"] || row["Name"];
-    const code = row.code || row["#"] || row["كود"] || row["Code"];
+    const name = getField(row, nameKeys);
+    const code = getField(row, codeKeys);
     if (name && code) {
       toInsert.push({ name: String(name), code: String(code) });
     }
