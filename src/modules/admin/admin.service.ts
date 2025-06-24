@@ -74,19 +74,20 @@ export const addCompaniesBulk = async (
 
   await pool.query(query, params);
 };
-
-export const replaceCompaniesBulk = async (
+export const upsertCompaniesBulk = async (
   companies: Array<{ name: string; code: string }>
 ) => {
+  if (!companies.length) return;
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    await client.query("DELETE FROM public.companies");
-    if (companies.length) {
-      const values = companies.map((c, i) => `($${i * 2 + 1}, $${i * 2 + 2})`);
-      const params = companies.flatMap((c) => [c.name, c.code]);
-      const query = `INSERT INTO public.companies (name, code) VALUES ${values.join(",")}`;
-      await client.query(query, params);
+    for (const company of companies) {
+      await client.query(
+        `INSERT INTO public.companies (name, code)
+         VALUES ($1, $2)
+         ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name`,
+        [company.name, company.code]
+      );
     }
     await client.query("COMMIT");
   } catch (err) {
@@ -96,7 +97,6 @@ export const replaceCompaniesBulk = async (
     client.release();
   }
 };
-
 export const getAllCompanies = async () => {
   const { rows } = await pool.query("SELECT id, name, code FROM public.companies ORDER BY id");
   return rows;
