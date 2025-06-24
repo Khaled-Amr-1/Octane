@@ -193,3 +193,23 @@ export const getUserAcknowledgmentsAndStatsService = async (userId: number) => {
     submitted        // total cards submitted in this month
   };
 };
+
+
+export const getAcknowledgmentsReportService = async (start: string, end: string) => {
+  const query = `
+    SELECT 
+      a.*, 
+      u.name AS user_name, 
+      c.name AS company_name, 
+      c.code AS company_code
+    FROM public.acknowledgments a
+    JOIN public.users u ON a.user_id = u.id
+    JOIN public.companies c ON a.company_id = c.id
+    WHERE a.submission_date::date >= $1
+      AND a.submission_date::date <= $2
+    ORDER BY a.submission_date ASC
+  `;
+  const params = [start, end];
+  const { rows } = await pool.query(query, params);
+  return rows;
+};

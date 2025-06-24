@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk, upsertCompaniesBulk, getAllCompanies, getAcknowledgmentsForPeriod, getAllUsersBasic, getUserAcknowledgmentsAndStatsService } from "./admin.service.js";
+import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk, upsertCompaniesBulk, getAllCompanies, getAcknowledgmentsForPeriod, getAllUsersBasic, getUserAcknowledgmentsAndStatsService, getAcknowledgmentsReportService } from "./admin.service.js";
 import * as XLSX from "xlsx";
 
 // Admin: Allocate NFCs to a user
@@ -225,6 +225,22 @@ export const getUserAcknowledgmentsAndStats = async (req: Request, res: Response
     const result = await getUserAcknowledgmentsAndStatsService(userId);
 
     res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+export const getAcknowledgmentsReport = async (req: Request, res: Response) => {
+  try {
+    const { start, end } = req.query;
+    if (!start || !end) {
+      res.status(400).json({ message: "start and end parameters are required" });
+      return;
+    }
+    const data = await getAcknowledgmentsReportService(start as string, end as string);
+    res.json({ acknowledgments: data });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
