@@ -77,7 +77,7 @@ export const getNfcs = async (req: Request, res: Response) => {
 
 const SUBMISSION_TYPES = ["replacement", "existing_customer", "new_customer"];
 const DELIVERY_METHODS = ["office_receival", "octane_employee", "aramex"];
-const STATE_TIMES = ["on-Time", "Late"]; // Add this constant
+const STATE_TIMES = ["on_Time", "Late"]; // Add this constant
 
 export const postAcknowledgment = async (req: Request, res: Response) => {
   try {
