@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk, replaceCompaniesBulk, getAllCompanies, getAcknowledgmentsForPeriod } from "./admin.service.js";
-import XLSX from "xlsx";
+import * as XLSX from "xlsx";
 
 // Admin: Allocate NFCs to a user
 export const allocateNfcsToUser = async (req: Request, res: Response) => {
@@ -59,101 +59,6 @@ export const deleteAcknowledgmentsByMonth = async (req: Request, res: Response) 
 };
 
 
-export const addCompaniesFromExcel = async (req: Request, res: Response) => {
-  try {
-    if (!req.file) {
-      res.status(400).json({ message: "No file uploaded" });
-      return;
-    }
-
-    const originalName = req.file.originalname.toLowerCase();
-    let companies: any[] = [];
-
-    if (originalName.endsWith(".csv")) {
-      const csvData = req.file.buffer.toString("utf-8");
-      const workbook = XLSX.read(csvData, { type: "string" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      companies = XLSX.utils.sheet_to_json(sheet);
-    } else {
-      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      companies = XLSX.utils.sheet_to_json(sheet);
-    }
-
-    // Validate and extract data
-    const toInsert: Array<{ name: string; code: string }> = [];
-    for (const row of companies as any[]) {
-      if (row.name && row.code) {
-        toInsert.push({ name: row.name, code: String(row.code) });
-      }
-    }
-
-    if (toInsert.length === 0) {
-      res.status(400).json({ message: "No valid rows found in file" });
-      return;
-    }
-
-    await addCompaniesBulk(toInsert);
-
-    res.status(201).json({ message: "Companies added successfully", count: toInsert.length });
-  } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const replaceAllCompanies = async (req: Request, res: Response) => {
-  try {
-    if (!req.file) {
-      res.status(400).json({ message: "No file uploaded" });
-      return;
-    }
-
-    // Parse Excel or CSV
-    const originalName = req.file.originalname.toLowerCase();
-    let companies: any[] = [];
-    if (originalName.endsWith(".csv")) {
-      const csvData = req.file.buffer.toString("utf-8");
-      const workbook = XLSX.read(csvData, { type: "string" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      companies = XLSX.utils.sheet_to_json(sheet);
-    } else {
-      const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      companies = XLSX.utils.sheet_to_json(sheet);
-    }
-
-    // Validate
-    const toInsert: Array<{ name: string; code: string }> = [];
-    for (const row of companies as any[]) {
-      if (row.name && row.code) {
-        toInsert.push({ name: row.name, code: String(row.code) });
-      }
-    }
-    if (toInsert.length === 0) {
-      res.status(400).json({ message: "No valid rows found in the file" });
-      return;
-    }
-
-    // Replace all companies atomically
-    await replaceCompaniesBulk(toInsert);
-
-    res.status(201).json({ message: "Companies replaced successfully", count: toInsert.length });
-  } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const getCompanies = async (req: Request, res: Response) => {
-  try {
-    const companies = await getAllCompanies();
-    res.json({ companies });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
 
 export const exportAcknowledgmentsReport = async (req: Request, res: Response) => {
   try {
@@ -162,10 +67,10 @@ export const exportAcknowledgmentsReport = async (req: Request, res: Response) =
       res.status(400).json({ message: "start and end date are required" });
       return;
     }
-
+    
     // Fetch data with user name and company name
     const data = await getAcknowledgmentsForPeriod(start as string, end as string);
-
+    
     // Prepare rows for Excel
     const rows = data.map(row => ({
       ID: row.id,
@@ -188,12 +93,93 @@ export const exportAcknowledgmentsReport = async (req: Request, res: Response) =
 
     // Generate buffer
     const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-
+    
     // Set headers and send file
     res.setHeader("Content-Disposition", `attachment; filename="acknowledgments_${start}_to_${end}.xlsx"`);
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.send(buffer);
+    
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
+// Helper to parse file buffer for .csv, .xlsx, .ods
+function parseCompaniesFromFile(file: Express.Multer.File): Array<{ name: string; code: string }> {
+  const originalName = file.originalname.toLowerCase();
+  let companies: any[] = [];
+  // CSV: treat buffer as utf-8 string
+  if (originalName.endsWith(".csv")) {
+    const csvData = file.buffer.toString("utf-8");
+    const workbook = XLSX.read(csvData, { type: "string" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    companies = XLSX.utils.sheet_to_json(sheet);
+  } else {
+    // .xlsx, .xls, .ods: treat as buffer
+    const workbook = XLSX.read(file.buffer, { type: "buffer" });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    companies = XLSX.utils.sheet_to_json(sheet);
+  }
+  // Your file may have Arabic headers, so normalize
+  const toInsert: Array<{ name: string; code: string }> = [];
+  for (const row of companies) {
+    // Try matching Arabic or English headers
+    const name = row.name || row["الإسم"] || row["اسم"] || row["Name"];
+    const code = row.code || row["#"] || row["كود"] || row["Code"];
+    if (name && code) {
+      toInsert.push({ name: String(name), code: String(code) });
+    }
+  }
+  return toInsert;
+}
+
+export const addCompaniesFromExcel = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ message: "No file uploaded" });
+      return;
+    }
+    const toInsert = parseCompaniesFromFile(req.file);
+
+    if (toInsert.length === 0) {
+      res.status(400).json({ message: "No valid rows found in file" });
+      return;
+    }
+
+    await addCompaniesBulk(toInsert);
+    res.status(201).json({ message: "Companies added successfully", count: toInsert.length });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const replaceAllCompanies = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ message: "No file uploaded" });
+      return;
+    }
+    const toInsert = parseCompaniesFromFile(req.file);
+
+    if (toInsert.length === 0) {
+      res.status(400).json({ message: "No valid rows found in the file" });
+      return;
+    }
+
+    await replaceCompaniesBulk(toInsert);
+    res.status(201).json({ message: "Companies replaced successfully", count: toInsert.length });
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getCompanies = async (req: Request, res: Response) => {
+  try {
+    const companies = await getAllCompanies();
+    res.json({ companies });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
