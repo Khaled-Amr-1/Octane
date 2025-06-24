@@ -134,3 +134,62 @@ export const getAllUsersBasic = async () => {
   );
   return rows;
 };
+
+export const getUserAcknowledgmentsAndStatsService = async (userId: number) => {
+  // Get current month boundaries (e.g., 2025-06-01 to 2025-07-01)
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const nextMonthDate = new Date(year, now.getMonth() + 1, 1);
+  const nextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}`;
+
+  const startOfMonth = `${year}-${month}-01`;
+  const startOfNextMonth = `${nextMonth}-01`;
+
+  // Get all acknowledgments for the user
+  const { rows: acknowledgments } = await pool.query(
+    `
+      SELECT 
+        a.*, 
+        c.name AS company_name, 
+        c.code AS company_code
+      FROM public.acknowledgments a
+      JOIN public.companies c ON a.company_id = c.id
+      WHERE a.user_id = $1
+      ORDER BY a.submission_date DESC
+    `,
+    [userId]
+  );
+
+  // Get total NFCs allocated this month
+  const { rows: nfcRows } = await pool.query(
+    `
+      SELECT COALESCE(SUM(allocated), 0) AS total_allocated
+      FROM public.nfcs
+      WHERE user_id = $1
+        AND day_allocated >= $2
+        AND day_allocated < $3
+    `,
+    [userId, startOfMonth, startOfNextMonth]
+  );
+  const allocated = Number(nfcRows[0]?.total_allocated || 0);
+
+  // Get total cards submitted (acknowledgments) this month
+  const { rows: submittedRows } = await pool.query(
+    `
+      SELECT COALESCE(SUM(cards_submitted), 0) AS total_submitted
+      FROM public.acknowledgments
+      WHERE user_id = $1
+        AND submission_date >= $2
+        AND submission_date < $3
+    `,
+    [userId, startOfMonth, startOfNextMonth]
+  );
+  const submitted = Number(submittedRows[0]?.total_submitted || 0);
+
+  return {
+    acknowledgments, // all acknowledgments for user (all time)
+    allocated,       // total NFCs allocated in this month
+    submitted        // total cards submitted in this month
+  };
+};

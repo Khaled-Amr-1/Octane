@@ -3,7 +3,7 @@ import { verifyToken } from "../../middlewares/auth.middleware.js";
 import { allocateNfcsToUser, suspendUser } from "./admin.controller.js";
 import { authorizeRoles } from "../../middlewares/authorize.middleware.js";
 import { deleteAcknowledgmentsByMonth, replaceAllCompanies } from "./admin.controller.js";
-import { addCompaniesFromExcel, getCompanies, exportAcknowledgmentsReport , getAllUsers} from "./admin.controller.js";
+import { addCompaniesFromExcel, getCompanies, exportAcknowledgmentsReport , getAllUsers, getUserAcknowledgmentsAndStats} from "./admin.controller.js";
 import { uploadExcel } from "../../middlewares/uploadExcel.middleware.js";
 
 const router = Router();
@@ -70,6 +70,13 @@ router.get(
   verifyToken,
   authorizeRoles("admin"),
   getAllUsers
+);
+
+router.get(
+  "/users/acknowledgments/:userId",
+  verifyToken,
+  authorizeRoles("admin"),
+  getUserAcknowledgmentsAndStats
 );
 
 export default router;
