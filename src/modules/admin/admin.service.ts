@@ -81,14 +81,24 @@ export const upsertCompaniesBulk = async (
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+
+    const values: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
     for (const company of companies) {
-      await client.query(
-        `INSERT INTO public.companies (name, code)
-         VALUES ($1, $2)
-         ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name`,
-        [company.name, company.code]
-      );
+      values.push(`($${paramIndex}, $${paramIndex + 1})`);
+      params.push(company.name, company.code);
+      paramIndex += 2;
     }
+
+    const sql = `
+      INSERT INTO public.companies (name, code)
+      VALUES ${values.join(", ")}
+      ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
+    `;
+
+    await client.query(sql, params);
     await client.query("COMMIT");
   } catch (err) {
     await client.query("ROLLBACK");
