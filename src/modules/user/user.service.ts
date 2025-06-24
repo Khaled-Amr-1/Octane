@@ -113,3 +113,19 @@ export const getAcknowledgmentsHistory = async (
     state_time: row.state_time,
   }));
 };
+
+export const getUserById = async (userId: number) => {
+  const { rows } = await pool.query(
+    "SELECT id, name, email, role, status, created_at, updated_at, image, password FROM public.users WHERE id = $1",
+    [userId]
+  );
+  return rows[0];
+};
+
+// Set user image
+export const setUserImage = async (userId: number, imageUrl: string) => {
+  await pool.query(
+    "UPDATE public.users SET image = $1, updated_at = NOW() WHERE id = $2",
+    [imageUrl, userId]
+  );
+};

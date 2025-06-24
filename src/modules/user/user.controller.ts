@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { getNfcsStats } from "./user.service.js";
+import { getUserById, setUserImage } from "./user.service.js";
+import { deleteFromCloudinaryByUrl } from "../../utils/cloudinary.js";
 
 import { uploadToCloudinary } from "../../utils/cloudinary.js";
 import {
@@ -7,7 +9,7 @@ import {
   getAcknowledgmentsHistory,
 } from "./user.service.js";
 
-//   try {
+
 //     const userId = (req as any).user.id;
 //     const stats = await getNfcsStats(userId);
 
@@ -168,3 +170,60 @@ export const getAcknowledgments = async (req: Request, res: Response) => {
 export const testRoute = (req: Request, res: Response) => {
   res.json({ message: "Test route works!" });
 }
+
+export const getProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    const user = await getUserById(userId);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+    // Omit password from returned data!
+    const { password, ...userData } = user;
+    res.json(userData);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// 2. POST /profile/image (set if null)
+export const uploadProfileImage = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    if (!req.file) {
+      res.status(400).json({ message: "Image file is required" });
+      return;
+    }
+    const imageUrl = await uploadToCloudinary(req.file.buffer, `user_${userId}_${Date.now()}`);
+    await setUserImage(userId, imageUrl);
+    res.status(201).json({ message: "Profile image uploaded", image: imageUrl });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// 3. PUT /profile/image (replace old image if exists)
+export const updateProfileImage = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    if (!req.file) {
+      res.status(400).json({ message: "Image file is required" });
+      return;
+    }
+    // Optionally delete previous image from Cloudinary
+    const user = await getUserById(userId);
+    if (user?.image) {
+      // Implement this function to remove image from Cloudinary if you want
+      await deleteFromCloudinaryByUrl(user.image);
+    }
+    const imageUrl = await uploadToCloudinary(req.file.buffer, `user_${userId}_${Date.now()}`);
+    await setUserImage(userId, imageUrl);
+    res.json({ message: "Profile image updated", image: imageUrl });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

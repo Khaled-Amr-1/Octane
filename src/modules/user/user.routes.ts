@@ -6,6 +6,12 @@ import {
   getAcknowledgments,
 } from "../user/user.controller.js";
 import { upload } from "../../middlewares/upload.middleware.js";
+import {
+  getProfile,
+  uploadProfileImage,
+  updateProfileImage,
+} from "./user.controller.js";
+
 const router = Router();
 
 // GET /nfcs
@@ -23,13 +29,20 @@ router.post(
 
 
 
+router.get("/profile", verifyToken, getProfile);
 
+router.post(
+  "/profile/image",
+  verifyToken,
+  upload.single("image"),
+  uploadProfileImage
+);
 
-
-
-
-
-
-
+router.put(
+  "/profile/image",
+  verifyToken,
+  upload.single("image"),
+  updateProfileImage
+);
 
 export default router;
