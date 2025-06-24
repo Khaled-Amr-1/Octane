@@ -127,3 +127,10 @@ export const getAcknowledgmentsForPeriod = async (start: string, end: string) =>
   const { rows } = await pool.query(query, params);
   return rows;
 };
+
+export const getAllUsersBasic = async () => {
+  const { rows } = await pool.query(
+    "SELECT id, name, image FROM public.users ORDER BY id"
+  );
+  return rows;
+};

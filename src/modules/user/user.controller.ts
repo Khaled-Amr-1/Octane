@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { getNfcsStats } from "./user.service.js";
-import { getUserById, setUserImage } from "./user.service.js";
+import { getUserById, setUserImage} from "./user.service.js";
 import { deleteFromCloudinaryByUrl } from "../../utils/cloudinary.js";
 
 import { uploadToCloudinary } from "../../utils/cloudinary.js";
@@ -227,3 +227,4 @@ export const updateProfileImage = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk, upsertCompaniesBulk, getAllCompanies, getAcknowledgmentsForPeriod } from "./admin.service.js";
+import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk, upsertCompaniesBulk, getAllCompanies, getAcknowledgmentsForPeriod, getAllUsersBasic } from "./admin.service.js";
 import * as XLSX from "xlsx";
 
 // Admin: Allocate NFCs to a user
@@ -196,6 +196,17 @@ export const getCompanies = async (req: Request, res: Response) => {
   try {
     const companies = await getAllCompanies();
     res.json({ companies });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await getAllUsersBasic();
+    res.json({ users });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
