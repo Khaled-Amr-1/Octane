@@ -52,7 +52,6 @@ router.put(
 router.get(
   "/companies",
   verifyToken,
-  authorizeRoles("admin"),
   getCompanies
 );
 
