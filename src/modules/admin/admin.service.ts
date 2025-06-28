@@ -146,7 +146,7 @@ export const getAllUsersBasic = async () => {
 };
 
 export const getUserAcknowledgmentsAndStatsService = async (userId: number) => {
-  // Get current month boundaries (e.g., 2025-06-01 to 2025-07-01)
+  // Get current month boundaries
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -156,12 +156,27 @@ export const getUserAcknowledgmentsAndStatsService = async (userId: number) => {
   const startOfMonth = `${year}-${month}-01`;
   const startOfNextMonth = `${nextMonth}-01`;
 
-  // Get all acknowledgments for the user
+  // Get user status
+  const { rows: userRows } = await pool.query(
+    `SELECT status FROM public.users WHERE id = $1`,
+    [userId]
+  );
+  const userStatus = userRows[0]?.status || null;
+
+  // Get all acknowledgments for the user (with company info)
   const { rows: acknowledgments } = await pool.query(
     `
       SELECT 
-        a.*, 
-        c.name AS company_name, 
+        a.id,
+        a.user_id,
+        a.submission_date,
+        a.company_id,
+        a.cards_submitted,
+        a.submission_type,
+        a.delivery_method,
+        a.image,
+        a.state_time,
+        c.name AS company_name,
         c.code AS company_code
       FROM public.acknowledgments a
       JOIN public.companies c ON a.company_id = c.id
@@ -170,6 +185,23 @@ export const getUserAcknowledgmentsAndStatsService = async (userId: number) => {
     `,
     [userId]
   );
+
+  // Map acknowledgments to desired structure
+  const mappedAcknowledgments = acknowledgments.map((a: any) => ({
+    id: a.id,
+    user_id: a.user_id,
+    submission_date: a.submission_date.toISOString().slice(0, 10), // YYYY-MM-DD
+    company: {
+      id: a.company_id,
+      code: a.company_code,
+      name: a.company_name
+    },
+    cards_submitted: a.cards_submitted,
+    submission_type: a.submission_type,
+    delivery_method: a.delivery_method,
+    image: a.image,
+    state_time: a.state_time
+  }));
 
   // Get total NFCs allocated this month
   const { rows: nfcRows } = await pool.query(
@@ -198,9 +230,10 @@ export const getUserAcknowledgmentsAndStatsService = async (userId: number) => {
   const submitted = Number(submittedRows[0]?.total_submitted || 0);
 
   return {
-    acknowledgments, // all acknowledgments for user (all time)
-    allocated,       // total NFCs allocated in this month
-    submitted        // total cards submitted in this month
+    status: userStatus, // add status to the response
+    acknowledgments: mappedAcknowledgments,
+    allocated,
+    submitted
   };
 };
 
