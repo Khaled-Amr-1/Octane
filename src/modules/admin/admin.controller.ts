@@ -240,7 +240,29 @@ export const getAcknowledgmentsReport = async (req: Request, res: Response) => {
       return;
     }
     const data = await getAcknowledgmentsReportService(start as string, end as string);
-    res.json({ acknowledgments: data });
+
+    // Transform output to match your standard
+    const acknowledgments = data.map((ack: any) => ({
+      id: ack.id,
+      user_id: ack.user_id,
+      cards_submitted: ack.cards_submitted,
+      submission_type: ack.submission_type,
+      delivery_method: ack.delivery_method,
+      image: ack.image,
+      submission_date: ack.submission_date
+        ? new Date(ack.submission_date).toISOString().slice(0, 10)
+        : null,
+      state_time: ack.state_time,
+      user_name: ack.user_name,
+      company: {
+        id: ack.company_id,
+        code: ack.company_code,
+        name: ack.company_name,
+      },
+      // Note: `updated_at` is omitted
+    }));
+
+    res.json({ acknowledgments });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
