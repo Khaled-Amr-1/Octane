@@ -73,7 +73,6 @@ export const exportAcknowledgmentsReport = async (req: Request, res: Response) =
     
     // Prepare rows for Excel
     const rows = data.map(row => ({
-      ID: row.id,
       User: row.user_name,
       Company: row.company_name,
       Company_Code: row.company_code,
@@ -83,7 +82,6 @@ export const exportAcknowledgmentsReport = async (req: Request, res: Response) =
       State_Time: row.state_time,
       Image: row.image,
       Submission_Date: row.submission_date,
-      Updated_At: row.updated_at
     }));
 
     // Create worksheet and workbook
