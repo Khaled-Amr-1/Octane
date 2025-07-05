@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { allocateNfcsForUser, suspendUserById, deleteAcknowledgmentsForMonth, addCompaniesBulk, upsertCompaniesBulk, getAllCompanies, getAcknowledgmentsForPeriod, getAllUsersBasic, getUserAcknowledgmentsAndStatsService, getAcknowledgmentsReportService } from "./admin.service.js";
+import { allocateNfcsForUser, toggleUserSuspendStatusById, deleteAcknowledgmentsForMonth, addCompaniesBulk, upsertCompaniesBulk, getAllCompanies, getAcknowledgmentsForPeriod, getAllUsersBasic, getUserAcknowledgmentsAndStatsService, getAcknowledgmentsReportService } from "./admin.service.js";
 import * as XLSX from "xlsx";
 
 // Admin: Allocate NFCs to a user
@@ -31,11 +31,13 @@ export const suspendUser = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await suspendUserById(userId);
-    if (result) {
+    const newStatus = await toggleUserSuspendStatusById(userId);
+    if (newStatus === "suspended") {
       res.json({ message: "User suspended successfully" });
+    } else if (newStatus === "active") {
+      res.json({ message: "User reactivated successfully" });
     } else {
-      res.status(404).json({ message: "User not found or already suspended" });
+      res.status(404).json({ message: "User not found or cannot toggle status" });
     }
   } catch (err) {
     console.error(err);

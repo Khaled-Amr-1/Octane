@@ -21,15 +21,35 @@ export const allocateNfcsForUser = async (
   return rows[0];
 };
 
-export const suspendUserById = async (userId: number): Promise<boolean> => {
-  const query = `
+export const toggleUserSuspendStatusById = async (userId: number): Promise<"suspended" | "active" | null> => {
+  // Fetch current status
+  const selectQuery = 'SELECT status FROM public.users WHERE id = $1';
+  const { rows } = await pool.query(selectQuery, [userId]);
+  if (rows.length === 0) return null;
+
+  const currentStatus = rows[0].status;
+  let newStatus: "suspended" | "active";
+
+  if (currentStatus === "active") {
+    newStatus = "suspended";
+  } else if (currentStatus === "suspended") {
+    newStatus = "active";
+  } else {
+    // Only toggle between active and suspended, ignore other statuses.
+    return null;
+  }
+
+  const updateQuery = `
     UPDATE public.users
-    SET status = 'suspended', updated_at = CURRENT_TIMESTAMP
-    WHERE id = $1 AND status != 'suspended'
-    RETURNING id
+    SET status = $2, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $1
+    RETURNING id, status
   `;
-  const { rowCount } = await pool.query(query, [userId]);
-  return (rowCount ?? 0) > 0;
+  const updateResult = await pool.query(updateQuery, [userId, newStatus]);
+  if (updateResult.rowCount && updateResult.rowCount > 0) {
+    return newStatus;
+  }
+  return null;
 };
 
 export const deleteAcknowledgmentsForMonth = async (month: string): Promise<number> => {
