@@ -276,3 +276,33 @@ export const getAcknowledgmentsReportService = async (start: string, end: string
   const { rows } = await pool.query(query, params);
   return rows;
 };
+
+export const getAcknowledgmentsForUserCurrentMonth = async (
+  userId: number,
+  start: string,
+  end: string
+) => {
+  const query = `
+    SELECT 
+      a.id,
+      u.name AS user_name,
+      c.name AS company_name,
+      c.code AS company_code,
+      a.cards_submitted,
+      a.submission_type,
+      a.delivery_method,
+      a.state_time,
+      a.image,
+      a.submission_date
+    FROM public.acknowledgments a
+    JOIN public.users u ON a.user_id = u.id
+    JOIN public.companies c ON a.company_id = c.id
+    WHERE a.user_id = $1
+      AND a.submission_date::date >= $2
+      AND a.submission_date::date <= $3
+    ORDER BY a.submission_date ASC
+  `;
+  const params = [userId, start, end];
+  const { rows } = await pool.query(query, params);
+  return rows;
+};

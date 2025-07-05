@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { allocateNfcsForUser, toggleUserSuspendStatusById, deleteAcknowledgmentsForMonth, addCompaniesBulk, upsertCompaniesBulk, getAllCompanies, getAcknowledgmentsForPeriod, getAllUsersBasic, getUserAcknowledgmentsAndStatsService, getAcknowledgmentsReportService } from "./admin.service.js";
+import { allocateNfcsForUser, toggleUserSuspendStatusById, deleteAcknowledgmentsForMonth, addCompaniesBulk, upsertCompaniesBulk, getAllCompanies, getAcknowledgmentsForPeriod, getAllUsersBasic, getUserAcknowledgmentsAndStatsService, getAcknowledgmentsReportService, getAcknowledgmentsForUserCurrentMonth } from "./admin.service.js";
 import * as XLSX from "xlsx";
 
 // Admin: Allocate NFCs to a user
@@ -263,6 +263,56 @@ export const getAcknowledgmentsReport = async (req: Request, res: Response) => {
     }));
 
     res.json({ acknowledgments });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+
+export const exportUserAcknowledgmentsCurrentMonth = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.userId, 10);
+
+    if (isNaN(userId)) {
+      res.status(400).json({ message: "Invalid user ID" });
+      return ;
+    }
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    const start = startOfMonth.toISOString().split("T")[0];
+    const end = endOfMonth.toISOString().split("T")[0];
+
+    const data = await getAcknowledgmentsForUserCurrentMonth(userId, start, end);
+
+    const rows = data.map(row => ({
+      User: row.user_name,
+      Company: row.company_name,
+      Company_Code: row.company_code,
+      Cards_Submitted: row.cards_submitted,
+      Submission_Type: row.submission_type,
+      Delivery_Method: row.delivery_method,
+      State_Time: row.state_time,
+      Image: row.image,
+      Submission_Date: row.submission_date,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Acknowledgments");
+
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="acknowledgments_user_${userId}_${start}_to_${end}.xlsx"`
+    );
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.send(buffer);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
