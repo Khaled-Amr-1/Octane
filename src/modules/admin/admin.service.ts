@@ -94,6 +94,8 @@ export const addCompaniesBulk = async (
 
   await pool.query(query, params);
 };
+
+
 export const upsertCompaniesBulk = async (
   companies: Array<{ name: string; code: string }>
 ) => {
@@ -119,6 +121,14 @@ export const upsertCompaniesBulk = async (
     `;
 
     await client.query(sql, params);
+
+        const deduplicateSql = `
+      DELETE FROM public.companies a
+      USING public.companies b
+      WHERE a.name = b.name
+        AND a.id > b.id;
+    `;
+    await client.query(deduplicateSql);
     await client.query("COMMIT");
   } catch (err) {
     await client.query("ROLLBACK");
@@ -127,6 +137,8 @@ export const upsertCompaniesBulk = async (
     client.release();
   }
 };
+
+
 export const getAllCompanies = async () => {
   const { rows } = await pool.query("SELECT id, name, code FROM public.companies ORDER BY id");
   return rows;
