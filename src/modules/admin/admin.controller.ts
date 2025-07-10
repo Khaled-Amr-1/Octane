@@ -196,25 +196,30 @@ export const replaceAllCompanies = async (req: Request, res: Response) => {
 
 export const getCompanies = async (req: Request, res: Response) => {
   try {
+    // 1) Fetch your data
     const companies = await getAllCompanies();
-    const data = { companies };
-    const json = JSON.stringify(data);
 
+    // 2) Build your payload and compute ETag
+    const payload = { companies };
+    const json = JSON.stringify(payload);
     const etag = crypto.createHash("sha1").update(json).digest("hex");
 
-    const clientETag = req.headers["if-none-match"];
-    if (clientETag === etag) {
-      return res.status(304).end(); // Not Modified
+    // 3) If client already has this version, short‑circuit
+    if (req.headers["if-none-match"] === etag) {
+      res.status(304).end();
+      return ;
     }
 
-    // Set headers manually
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("Content-Type", "application/json");
-    res.setHeader("ETag", etag);
-
-    // Use writeHead + end to avoid Express interference
-    res.writeHead(200);
-    res.end(json);
+    // 4) Otherwise send updated data + headers
+    res
+      .set({
+        "Cache-Control": "no-store",
+        ETag: etag,
+        "Content-Type": "application/json",
+      })
+      // also include etag in the body if your client wants it in JSON
+      .status(200)
+      .json({ companies, etag });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
