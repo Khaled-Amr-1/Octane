@@ -198,24 +198,26 @@ export const getCompanies = async (req: Request, res: Response) => {
   try {
     const companies = await getAllCompanies();
 
-    // Generate ETag from the JSON string of companies
     const dataString = JSON.stringify(companies);
     const etag = crypto.createHash("sha1").update(dataString).digest("hex");
 
-    // Check if client has matching ETag
     const clientETag = req.headers["if-none-match"];
     if (clientETag === etag) {
-      res.status(304).end(); // Not Modified
-      return;
+      return res.status(304).end();
     }
 
+    // Prevent Vercel from injecting its own caching/etag logic
+    res.setHeader("Cache-Control", "no-store");
+    res.removeHeader("ETag"); // Just in case
     res.setHeader("ETag", etag);
+
     res.json({ companies });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 
 export const getAllUsers = async (req: Request, res: Response) => {
