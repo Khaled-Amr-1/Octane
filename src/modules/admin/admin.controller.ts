@@ -197,8 +197,7 @@ export const replaceAllCompanies = async (req: Request, res: Response) => {
 export const getCompanies = async (req: Request, res: Response) => {
   try {
     const companies = await getAllCompanies();
-
-    const dataString = JSON.stringify(companies);
+    const dataString = JSON.stringify({ companies });
     const etag = crypto.createHash("sha1").update(dataString).digest("hex");
 
     const clientETag = req.headers["if-none-match"];
@@ -206,12 +205,12 @@ export const getCompanies = async (req: Request, res: Response) => {
       return res.status(304).end();
     }
 
-    // Prevent Vercel from injecting its own caching/etag logic
     res.setHeader("Cache-Control", "no-store");
-    res.removeHeader("ETag"); // Just in case
     res.setHeader("ETag", etag);
+    res.setHeader("Content-Type", "application/json");
 
-    res.json({ companies });
+    res.writeHead(200);
+    res.end(dataString);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
