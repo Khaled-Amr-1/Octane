@@ -197,20 +197,24 @@ export const replaceAllCompanies = async (req: Request, res: Response) => {
 export const getCompanies = async (req: Request, res: Response) => {
   try {
     const companies = await getAllCompanies();
-    const dataString = JSON.stringify({ companies });
-    const etag = crypto.createHash("sha1").update(dataString).digest("hex");
+    const data = { companies };
+    const json = JSON.stringify(data);
+
+    const etag = crypto.createHash("sha1").update(json).digest("hex");
 
     const clientETag = req.headers["if-none-match"];
     if (clientETag === etag) {
-      return res.status(304).end();
+      return res.status(304).end(); // Not Modified
     }
 
+    // Set headers manually
     res.setHeader("Cache-Control", "no-store");
-    res.setHeader("ETag", etag);
     res.setHeader("Content-Type", "application/json");
+    res.setHeader("ETag", etag);
 
+    // Use writeHead + end to avoid Express interference
     res.writeHead(200);
-    res.end(dataString);
+    res.end(json);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
