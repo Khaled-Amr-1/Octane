@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { allocateNfcsForUser, toggleUserSuspendStatusById, deleteAcknowledgmentsForMonth, addCompaniesBulk, upsertCompaniesBulk, getAllCompanies, getAcknowledgmentsForPeriod, getAllUsersBasic, getUserAcknowledgmentsAndStatsService, getAcknowledgmentsReportService, getAcknowledgmentsForUserCurrentMonth } from "./admin.service.js";
 import * as XLSX from "xlsx";
+import crypto from "crypto";
 
 // Admin: Allocate NFCs to a user
 export const allocateNfcsToUser = async (req: Request, res: Response) => {
@@ -192,9 +193,23 @@ export const replaceAllCompanies = async (req: Request, res: Response) => {
   }
 };
 
+
 export const getCompanies = async (req: Request, res: Response) => {
   try {
     const companies = await getAllCompanies();
+
+    // Generate ETag from the JSON string of companies
+    const dataString = JSON.stringify(companies);
+    const etag = crypto.createHash("sha1").update(dataString).digest("hex");
+
+    // Check if client has matching ETag
+    const clientETag = req.headers["if-none-match"];
+    if (clientETag === etag) {
+      res.status(304).end(); // Not Modified
+      return;
+    }
+
+    res.setHeader("ETag", etag);
     res.json({ companies });
   } catch (err) {
     console.error(err);
