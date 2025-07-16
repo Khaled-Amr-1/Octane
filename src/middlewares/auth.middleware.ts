@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import pool  from "../db.js"; // Adjust path if necessary
-
+//
 // Replace with your actual secret
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
