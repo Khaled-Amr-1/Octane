@@ -171,10 +171,23 @@ export const getAcknowledgmentsForPeriod = async (start: string, end: string) =>
 };
 
 export const getAllUsersBasic = async () => {
-  const { rows } = await pool.query(
+  // Get all users
+  const { rows: users } = await pool.query(
     "SELECT id, name, image FROM public.users ORDER BY id"
   );
-  return rows;
+
+  // Get total NFCs allocated this year
+  const { rows: totalRows } = await pool.query(
+    `
+      SELECT COALESCE(SUM(allocated), 0) AS total
+      FROM public.nfcs
+      WHERE EXTRACT(YEAR FROM day_allocated) = EXTRACT(YEAR FROM CURRENT_DATE)
+    `
+  );
+
+  const total = Number(totalRows[0].total || 0);
+
+  return { users, total };
 };
 
 export const getUserAcknowledgmentsAndStatsService = async (userId: number) => {

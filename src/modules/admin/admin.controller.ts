@@ -230,8 +230,8 @@ export const getCompanies = async (req: Request, res: Response) => {
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
-    const users = await getAllUsersBasic();
-    res.json({ users });
+    const { users, total } = await getAllUsersBasic();
+    res.json({ users, total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
