@@ -113,12 +113,14 @@ export const getAcknowledgmentsHistory = async (
   let dateFilter = "";
 
   if (period === "daily") {
-    dateFilter = "a.submission_date::date = CURRENT_DATE";
+    // Start of today
+    dateFilter = `a.submission_date::date = CURRENT_DATE`;
   } else if (period === "weekly") {
-    dateFilter =
-      "a.submission_date::date >= (CURRENT_DATE - INTERVAL '6 days')";
+    // Start of this week (same as dayjs().startOf("week"))
+    dateFilter = `a.submission_date >= date_trunc('week', CURRENT_DATE)`;
   } else if (period === "monthly") {
-    dateFilter = "a.submission_date::date >= date_trunc('month', CURRENT_DATE)";
+    // Start of this month
+    dateFilter = `a.submission_date >= date_trunc('month', CURRENT_DATE)`;
   } else {
     throw new Error("Invalid period");
   }
@@ -140,8 +142,8 @@ export const getAcknowledgmentsHistory = async (
       AND ${dateFilter}
     ORDER BY a.submission_date DESC
   `;
-  const params = [userId];
-  const { rows } = await pool.query(historyQuery, params);
+
+  const { rows } = await pool.query(historyQuery, [userId]);
 
   return rows.map((row) => ({
     submission_date: row.submission_date
