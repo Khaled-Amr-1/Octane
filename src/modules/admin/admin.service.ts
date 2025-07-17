@@ -178,24 +178,22 @@ export const getAllUsersBasic = async () => {
 };
 
 export const getUserAcknowledgmentsAndStatsService = async (userId: number) => {
-  // Get current month boundaries
+  // determine month boundaries
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, '0');
   const nextMonthDate = new Date(year, now.getMonth() + 1, 1);
-  const nextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, "0")}`;
-
+  const nextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}`;
   const startOfMonth = `${year}-${month}-01`;
   const startOfNextMonth = `${nextMonth}-01`;
 
-  // Get user status
+  // fetch user status & acknowledgments
   const { rows: userRows } = await pool.query(
     `SELECT status FROM public.users WHERE id = $1`,
     [userId]
   );
   const userStatus = userRows[0]?.status || null;
 
-  // Get all acknowledgments for the user (with company info)
   const { rows: acknowledgments } = await pool.query(
     `
       SELECT 
@@ -218,11 +216,10 @@ export const getUserAcknowledgmentsAndStatsService = async (userId: number) => {
     [userId]
   );
 
-  // Map acknowledgments to desired structure
   const mappedAcknowledgments = acknowledgments.map((a: any) => ({
     id: a.id,
     user_id: a.user_id,
-    submission_date: a.submission_date.toISOString().slice(0, 10), // YYYY-MM-DD
+    submission_date: a.submission_date.toISOString().slice(0, 10),
     company: {
       id: a.company_id,
       code: a.company_code,
@@ -235,37 +232,52 @@ export const getUserAcknowledgmentsAndStatsService = async (userId: number) => {
     state_time: a.state_time
   }));
 
-  // Get total NFCs allocated this month
-  const { rows: nfcRows } = await pool.query(
-    `
-      SELECT COALESCE(SUM(allocated), 0) AS total_allocated
-      FROM public.nfcs
-      WHERE user_id = $1
-        AND day_allocated >= $2
-        AND day_allocated < $3
-    `,
-    [userId, startOfMonth, startOfNextMonth]
-  );
-  const allocated = Number(nfcRows[0]?.total_allocated || 0);
+  // calculate available & submitted with carry-over
+  const carryQuery = `
+    WITH
+      allocated_current AS (
+        SELECT COALESCE(SUM(allocated),0) AS amt
+          FROM public.nfcs
+         WHERE user_id = $1
+           AND day_allocated >= $2
+           AND day_allocated <  $3
+      ),
+      submitted_current AS (
+        SELECT COALESCE(SUM(cards_submitted),0) AS amt
+          FROM public.acknowledgments
+         WHERE user_id = $1
+           AND submission_date >= $2
+           AND submission_date <  $3
+      ),
+      allocated_prior AS (
+        SELECT COALESCE(SUM(allocated),0) AS amt
+          FROM public.nfcs
+         WHERE user_id = $1
+           AND day_allocated  < $2
+      ),
+      submitted_prior AS (
+        SELECT COALESCE(SUM(cards_submitted),0) AS amt
+          FROM public.acknowledgments
+         WHERE user_id = $1
+           AND submission_date  < $2
+      )
+    SELECT
+      (ac.amt + GREATEST(ap.amt - sp.amt, 0)) AS available,
+      sc.amt                                 AS submitted
+    FROM allocated_current ac
+    CROSS JOIN submitted_current sc
+    CROSS JOIN allocated_prior   ap
+    CROSS JOIN submitted_prior   sp;
+  `;
 
-  // Get total cards submitted (acknowledgments) this month
-  const { rows: submittedRows } = await pool.query(
-    `
-      SELECT COALESCE(SUM(cards_submitted), 0) AS total_submitted
-      FROM public.acknowledgments
-      WHERE user_id = $1
-        AND submission_date >= $2
-        AND submission_date < $3
-    `,
-    [userId, startOfMonth, startOfNextMonth]
-  );
-  const submitted = Number(submittedRows[0]?.total_submitted || 0);
+  const { rows: statsRows } = await pool.query(carryQuery, [userId, startOfMonth, startOfNextMonth]);
+  const { available, submitted: total_submitted } = statsRows[0];
 
   return {
-    status: userStatus, // add status to the response
+    status: userStatus,
     acknowledgments: mappedAcknowledgments,
-    allocated,
-    submitted
+    allocated: Number(available),
+    submitted: Number(total_submitted)
   };
 };
 

@@ -1,34 +1,57 @@
 import pool from '../../db.js';
 
-// const pool = new Pool({
-//   // Your database config here, or use env variables
-//   connectionString: process.env.DATABASE_URL,
-// });
+export interface NfcStats {
+  allocated: number;
+  submitted: number;
+}
 
-// Helper to get first and last day of the current month in SQL
-export const getNfcsStats = async (userId: number) => {
+
+export const getNfcsStats = async (userId: number): Promise<NfcStats> => {
   const query = `
-  WITH
-    allocated_sum AS (
-      SELECT SUM(allocated) AS allocated
-      FROM public.nfcs
-      WHERE user_id = $1
-        AND day_allocated >= date_trunc('month', CURRENT_DATE)
-        AND day_allocated < (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month')
-    ),
-    submitted_sum AS (
-      SELECT SUM(cards_submitted) AS submitted
-      FROM public.acknowledgments
-      WHERE user_id = $1
-        AND updated_at >= date_trunc('month', CURRENT_DATE)
-        AND updated_at < (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month')
-    )
-  SELECT COALESCE(a.allocated, 0) AS allocated, COALESCE(s.submitted, 0) AS submitted
-  FROM allocated_sum a, submitted_sum s;
+    WITH
+      allocated_current AS (
+        SELECT COALESCE(SUM(allocated),0) AS amt
+          FROM public.nfcs
+         WHERE user_id = $1
+           AND day_allocated >= date_trunc('month', CURRENT_DATE)
+           AND day_allocated <  (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month')
+      ),
+      submitted_current AS (
+        SELECT COALESCE(SUM(cards_submitted),0) AS amt
+          FROM public.acknowledgments
+         WHERE user_id = $1
+           AND updated_at >= date_trunc('month', CURRENT_DATE)
+           AND updated_at <  (date_trunc('month', CURRENT_DATE) + INTERVAL '1 month')
+      ),
+      allocated_prior AS (
+        SELECT COALESCE(SUM(allocated),0) AS amt
+          FROM public.nfcs
+         WHERE user_id = $1
+           AND day_allocated  < date_trunc('month', CURRENT_DATE)
+      ),
+      submitted_prior AS (
+        SELECT COALESCE(SUM(cards_submitted),0) AS amt
+          FROM public.acknowledgments
+         WHERE user_id = $1
+           AND updated_at      < date_trunc('month', CURRENT_DATE)
+      )
+    SELECT
+      (ac.amt + GREATEST(ap.amt - sp.amt, 0)) AS available,
+      sc.amt                        AS submitted
+    FROM allocated_current ac
+    CROSS JOIN submitted_current sc
+    CROSS JOIN allocated_prior   ap
+    CROSS JOIN submitted_prior   sp;
   `;
+
   const { rows } = await pool.query(query, [userId]);
-  return rows[0];
+  const { available, submitted } = rows[0];
+  return {
+    allocated: Number(available),
+    submitted: Number(submitted)
+  };
 };
+
 
 export const insertAcknowledgmentWithCompany = async (
   userId: number,
