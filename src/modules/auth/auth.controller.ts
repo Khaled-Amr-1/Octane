@@ -45,8 +45,7 @@ export const signup = async (req: Request, res: Response) => {
         status: newUser.status,
         image: newUser.image,
       },
-      JWT_SECRET,
-      { expiresIn: "168h" }
+      JWT_SECRET
     );
     res.status(201).json({
       token,
@@ -79,9 +78,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     if (user.status === "suspended") {
-      res
-        .status(403)
-        .json({ message: "Account suspended" });
+      res.status(403).json({ message: "Account suspended" });
       return;
     }
 
@@ -94,8 +91,7 @@ export const login = async (req: Request, res: Response) => {
         status: user.status,
         image: user.image,
       },
-      JWT_SECRET,
-      { expiresIn: "168h" }
+      JWT_SECRET
     );
 
     res.json({
